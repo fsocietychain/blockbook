@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
-	"os"
 	"reflect"
 	"time"
 
@@ -40,11 +40,11 @@ import (
 	"github.com/trezor/blockbook/bchain/coins/monetaryunit"
 	"github.com/trezor/blockbook/bchain/coins/myriad"
 	"github.com/trezor/blockbook/bchain/coins/namecoin"
+	"github.com/trezor/blockbook/bchain/coins/fsociety"
 	"github.com/trezor/blockbook/bchain/coins/nuls"
 	"github.com/trezor/blockbook/bchain/coins/omotenashicoin"
 	"github.com/trezor/blockbook/bchain/coins/pivx"
 	"github.com/trezor/blockbook/bchain/coins/polis"
-	"github.com/trezor/blockbook/bchain/coins/polygon"
 	"github.com/trezor/blockbook/bchain/coins/qtum"
 	"github.com/trezor/blockbook/bchain/coins/ravencoin"
 	"github.com/trezor/blockbook/bchain/coins/ritocoin"
@@ -73,12 +73,12 @@ func init() {
 	BlockChainFactories["Ethereum"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Archive"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Classic"] = eth.NewEthereumRPC
+	BlockChainFactories["Ethereum Testnet Ropsten"] = eth.NewEthereumRPC
+	BlockChainFactories["Ethereum Testnet Ropsten Archive"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Testnet Goerli"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Testnet Goerli Archive"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Testnet Sepolia"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Testnet Sepolia Archive"] = eth.NewEthereumRPC
-	BlockChainFactories["Ethereum Testnet Holesky"] = eth.NewEthereumRPC
-	BlockChainFactories["Ethereum Testnet Holesky Archive"] = eth.NewEthereumRPC
 	BlockChainFactories["Bcash"] = bch.NewBCashRPC
 	BlockChainFactories["Bcash Testnet"] = bch.NewBCashRPC
 	BlockChainFactories["Bgold"] = btg.NewBGoldRPC
@@ -122,6 +122,7 @@ func init() {
 	BlockChainFactories["VIPSTARCOIN"] = vipstarcoin.NewVIPSTARCOINRPC
 	BlockChainFactories["Flux"] = zec.NewZCashRPC
 	BlockChainFactories["Ravencoin"] = ravencoin.NewRavencoinRPC
+	BlockChainFactories["Fsociety"] = fsociety.NewFsocietyRPC
 	BlockChainFactories["Ritocoin"] = ritocoin.NewRitocoinRPC
 	BlockChainFactories["Divi"] = divi.NewDiviRPC
 	BlockChainFactories["CPUchain"] = cpuchain.NewCPUchainRPC
@@ -138,13 +139,25 @@ func init() {
 	BlockChainFactories["Avalanche Archive"] = avalanche.NewAvalancheRPC
 	BlockChainFactories["BNB Smart Chain"] = bsc.NewBNBSmartChainRPC
 	BlockChainFactories["BNB Smart Chain Archive"] = bsc.NewBNBSmartChainRPC
-	BlockChainFactories["Polygon"] = polygon.NewPolygonRPC
-	BlockChainFactories["Polygon Archive"] = polygon.NewPolygonRPC
+}
+
+// GetCoinNameFromConfig gets coin name and coin shortcut from config file
+func GetCoinNameFromConfig(configFileContent []byte) (string, string, string, error) {
+	var cn struct {
+		CoinName     string `json:"coin_name"`
+		CoinShortcut string `json:"coin_shortcut"`
+		CoinLabel    string `json:"coin_label"`
+	}
+	err := json.Unmarshal(configFileContent, &cn)
+	if err != nil {
+		return "", "", "", errors.Annotatef(err, "Error parsing config file ")
+	}
+	return cn.CoinName, cn.CoinShortcut, cn.CoinLabel, nil
 }
 
 // NewBlockChain creates bchain.BlockChain and bchain.Mempool for the coin passed by the parameter coin
 func NewBlockChain(coin string, configfile string, pushHandler func(bchain.NotificationType), metrics *common.Metrics) (bchain.BlockChain, bchain.Mempool, error) {
-	data, err := os.ReadFile(configfile)
+	data, err := ioutil.ReadFile(configfile)
 	if err != nil {
 		return nil, nil, errors.Annotatef(err, "Error reading file %v", configfile)
 	}
