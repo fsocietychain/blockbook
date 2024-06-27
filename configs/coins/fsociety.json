@@ -60,8 +60,8 @@
       "additional_params": {}
     }
   },
-  "meta": {
-    "package_maintainer": "fs",
-    "package_maintainer_email": ""
-  }
+    "meta": {
+        "package_maintainer": "IT",
+        "package_maintainer_email": "it@satoshilabs.com"
+    }
 }
